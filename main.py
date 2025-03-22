@@ -141,7 +141,7 @@ class MainGameScene:
                 for item_one_rect in item.rects:
                     for selected_item_one_rect in self.selected_item.rects:
                         if rl.check_collision_recs(item_one_rect, selected_item_one_rect):
-                            self.selected_item.rects = copy.deepcopy(self.start_rects)  # 원래 자리로 복귀
+                            self.selected_item.rects = self.start_rects  # 원래 자리로 복귀
                             self.selected_item = None  # 선택 아이템을 없앰
                             break  # 더 이상 루프를 돌 필요 없음
                     if self.selected_item is None:
