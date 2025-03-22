@@ -3,6 +3,7 @@ import raylibpy as rl
 class Game:
     def __init__(self):
         rl.init_window(1600, 800, "test")
+        rl.set_target_fps(60)
 
         self.scenes = {
             "main_game" : MainGameScene(self)
@@ -40,21 +41,44 @@ class MainGameScene:
             rl.Rectangle(100, 650, 450, 50)
         ]
 
-        self.selected_item = rl.Rectangle(50, 50, 50, 50)
+        self.selected_item = [rl.Rectangle(100, 150, 50, 50), rl.Rectangle(100, 200, 50, 50)]
 
     def move_selected_item(self, delta_x, delta_y):
-        self.selected_item.x += delta_x * 50
-        self.selected_item.y += delta_y * 50
+        for item_one_rect in self.selected_item:
+            item_one_rect.x += delta_x * 50
+            item_one_rect.y += delta_y * 50
+
+        is_collided = False
+        for wall_rect in self.pendnant_wall_rects:
+            for item_one_rect in self.selected_item:
+                if rl.check_collision_recs(wall_rect, item_one_rect):
+                    is_collided = True
+
+        if is_collided:
+            for item_one_rect in self.selected_item:
+                if delta_x > 0:
+                    item_one_rect.x -= 50
+                if delta_x < 0:
+                    item_one_rect.x += 50
+                        
+                if delta_y > 0:
+                    item_one_rect.y -= 50
+                if delta_y < 0:
+                    item_one_rect.y += 50
+
+
 
     def update(self):
         if rl.is_key_pressed(rl.KEY_W):
-            self.move_selected_item(0, 1)
+            self.move_selected_item(0, -1)
         if rl.is_key_pressed(rl.KEY_A):
             self.move_selected_item(-1, 0)
         if rl.is_key_pressed(rl.KEY_S):
-            self.move_selected_item(0, -1)
+            self.move_selected_item(0, 1)
         if rl.is_key_pressed(rl.KEY_D):
             self.move_selected_item(1, 0)
+
+        print(self.selected_item)
 
     def draw(self):
         rl.begin_drawing()
@@ -84,6 +108,9 @@ class MainGameScene:
         
         for rects in self.pendnant_wall_rects:
             rl.draw_rectangle_rec(rects, rl.BLUE)
+        
+        for item_one_rect in self.selected_item:
+            rl.draw_rectangle_rec(item_one_rect, rl.RED)
 
         rl.draw_fps(20, 20)
 
