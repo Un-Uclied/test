@@ -27,10 +27,12 @@ class Game:
 import raylibpy as rl
 
 class Item:
-    def __init__(self, name, rects):
+    def __init__(self, name, rects, textures : list[rl.Texture]):
         self.name = name
+        self.position = rl.Vector2(rects[0].x, rects[1].y - 50)
         self.rects = rects  # 아이템을 이루는 블록들의 위치 리스트
         self.rotation = 0
+        self.textures = textures
 
     def rotate(self, clockwise=True):
         if clockwise:
@@ -67,6 +69,12 @@ class Item:
 
         # 회전된 위치 적용
         self.rects = new_rects
+
+    def get_top_left_rect(self):
+        return min(self.rects, key=lambda r: (r.y, r.x))
+
+    def draw(self):
+        rl.draw_texture_v(self.textures[self.rotation], self.position, rl.WHITE)
     
 
 class MainGameScene:
@@ -87,11 +95,12 @@ class MainGameScene:
             rl.Rectangle(100, 650, 450, 50)
         ]
 
-        self.items = {"test_item_1" : Item("test_item_1", [rl.Rectangle(100, 150, 50, 50), rl.Rectangle(100, 200, 50, 50), rl.Rectangle(150, 150, 50, 50)]),
-                      "test_item_2" : Item("test_item_2", [rl.Rectangle(100, 450, 50, 50), rl.Rectangle(100, 500, 50, 50), rl.Rectangle(150, 450, 50, 50)])}
+        self.items = {"test_item_1" : Item("test_item_1", [rl.Rectangle(100, 150, 50, 50), rl.Rectangle(150, 200, 50, 50), rl.Rectangle(150, 150, 50, 50)], {0 : rl.load_texture("item_images/fire/0.png"), 90 : rl.load_texture("item_images/fire/90.png"), 180 : rl.load_texture("item_images/fire/180.png"), 270 : rl.load_texture("item_images/fire/270.png")}),
+                      "test_item_2" : Item("test_item_2", [rl.Rectangle(100, 450, 50, 50), rl.Rectangle(100, 500, 50, 50), rl.Rectangle(150, 500, 50, 50)], {0 : rl.load_texture("item_images/ice/0.png"), 90 : rl.load_texture("item_images/ice/90.png"), 180 : rl.load_texture("item_images/ice/180.png"), 270 : rl.load_texture("item_images/ice/270.png")})}
 
         self.selected_item = None
         self.start_rects = []
+        self.start_pos = rl.Vector2()
 
     def move_selected_item(self, delta_x, delta_y):
         for item_one_rect in self.selected_item.rects:
@@ -116,6 +125,9 @@ class MainGameScene:
                 if delta_y < 0:
                     item_one_rect.y += 50
 
+        if not is_collided:
+            self.selected_item.position += rl.Vector2(delta_x * 50, delta_y * 50)
+
     def update(self):
         if not self.selected_item and rl.is_mouse_button_pressed(rl.MOUSE_BUTTON_LEFT):
             for item in self.items.values():
@@ -123,6 +135,7 @@ class MainGameScene:
                     if rl.check_collision_point_rec(rl.get_mouse_position(), item_one_rect):
                         self.selected_item = item
                         self.start_rects = copy.deepcopy(item.rects)
+                        self.start_pos = copy.deepcopy(item.position)
 
         if self.selected_item:
             if rl.is_key_pressed(rl.KEY_W):
@@ -142,6 +155,7 @@ class MainGameScene:
                     for selected_item_one_rect in self.selected_item.rects:
                         if rl.check_collision_recs(item_one_rect, selected_item_one_rect):
                             self.selected_item.rects = self.start_rects  # 원래 자리로 복귀
+                            self.selected_item.position = self.start_pos
                             self.selected_item = None  # 선택 아이템을 없앰
                             break  # 더 이상 루프를 돌 필요 없음
                     if self.selected_item is None:
@@ -189,8 +203,13 @@ class MainGameScene:
         for item in self.items.values():
             for item_one_rect in item.rects:
                 rl.draw_rectangle_rec(item_one_rect, rl.RED)
+            item.draw()
+
+        
+
 
         if not self.selected_item is None:
+            self.selected_item.draw()
             rl.draw_text(self.selected_item.name, 970, 100, 40, rl.BLACK)
             rl.draw_text(f"rotation : {self.selected_item.rotation}", 970, 150, 40, rl.BLACK)
 
