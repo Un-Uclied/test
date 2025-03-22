@@ -24,10 +24,50 @@ class Game:
 
         rl.close_window()
 
+import raylibpy as rl
+
 class Item:
     def __init__(self, name, rects):
         self.name = name
-        self.rects = rects
+        self.rects = rects  # 아이템을 이루는 블록들의 위치 리스트
+        self.rotation = 0
+
+    def rotate(self, clockwise=True):
+        if clockwise:
+            self.rotation = (self.rotation + 90) % 360
+        else:
+            self.rotation = (self.rotation - 90) % 360
+
+        """아이템을 시계(E) 또는 반시계(Q) 방향으로 회전"""
+        # 아이템의 중심 좌표 구하기
+        min_x = min(rect.x for rect in self.rects)
+        min_y = min(rect.y for rect in self.rects)
+        max_x = max(rect.x for rect in self.rects)
+        max_y = max(rect.y for rect in self.rects)
+        
+        center_x = (min_x + max_x) / 2
+        center_y = (min_y + max_y) / 2
+
+        new_rects = []
+        for rect in self.rects:
+            # 현재 좌표를 중심 기준 상대 좌표로 변환
+            rel_x = rect.x - center_x
+            rel_y = rect.y - center_y
+            
+            # 회전 공식 적용
+            if clockwise:
+                new_x = center_x + rel_y  # 시계 방향 회전 (E 키)
+                new_y = center_y - rel_x
+            else:
+                new_x = center_x - rel_y  # 반시계 방향 회전 (Q 키)
+                new_y = center_y + rel_x
+
+            # 새 좌표로 변경
+            new_rects.append(rl.Rectangle(new_x, new_y, rect.width, rect.height))
+
+        # 회전된 위치 적용
+        self.rects = new_rects
+    
 
 class MainGameScene:
     def __init__(self, game : Game):
@@ -108,8 +148,14 @@ class MainGameScene:
                         break  # 내부 루프를 빠져나감
                 if self.selected_item is None:
                     break  # 최상위 루프까지 빠져나감
-                
+
             self.selected_item = None
+
+        # 아이템 회전 (Q: 반시계, E: 시계)
+        if rl.is_key_pressed(rl.KEY_E) and not self.selected_item is None:
+            self.selected_item.rotate(clockwise=False)
+        if rl.is_key_pressed(rl.KEY_Q) and not self.selected_item is None:
+            self.selected_item.rotate(clockwise=True)
 
     def draw(self):
         rl.begin_drawing()
@@ -144,8 +190,9 @@ class MainGameScene:
             for item_one_rect in item.rects:
                 rl.draw_rectangle_rec(item_one_rect, rl.RED)
 
-        if self.selected_item:
+        if not self.selected_item is None:
             rl.draw_text(self.selected_item.name, 970, 100, 40, rl.BLACK)
+            rl.draw_text(f"rotation : {self.selected_item.rotation}", 970, 150, 40, rl.BLACK)
 
         rl.draw_fps(20, 20)
 
